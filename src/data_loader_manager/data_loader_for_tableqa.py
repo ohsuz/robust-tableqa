@@ -1420,13 +1420,6 @@ class DataLoaderForTableQA(DataLoaderWrapper):
             if os.path.exists(split_cache_path):
                 dataset = load_from_disk(split_cache_path)
             else:
-                if self.data.nq_tables_data.get('bm25_results', None) is None:
-                    bm25_results_path = os.path.join(self.config.DATA_FOLDER, module_config.config.bm25_results)
-                    if not os.path.exists(bm25_results_path):
-                        raise Exception("Please generate BM25 results first.")
-                    with open(bm25_results_path, 'r') as bm25_results_file:
-                        bm25_results = json.load(bm25_results_file)
-
                 dataset = dict()
                 with open(split_path, "r") as json_file:
                     for line in tqdm(json_file):
@@ -1452,20 +1445,12 @@ class DataLoaderForTableQA(DataLoaderWrapper):
                                     continue
                                 alternative_answers.append(alternative_answer)
                             
-                            bm25_retrieved_items = bm25_results.get(question_id, None)
-                            if bm25_retrieved_items:
-                                bm25_retrieved_item_ids = [i['id'] for i in bm25_retrieved_items]
-                            else:
-                                logger.error(f"{question_id} not found retrieved bm25 documents!")
-                                bm25_retrieved_item_ids = []
-                            
                             example = EasyDict(
                                 question_id=question_id,
                                 question=question,
                                 answers=answers,
                                 alternative_answers=alternative_answers,
                                 pos_item_id=table_id,
-                                bm25_retrieved_item_ids=bm25_retrieved_item_ids,
                             )
                             dataset[question_id] = example
                 
@@ -1524,13 +1509,6 @@ class DataLoaderForTableQA(DataLoaderWrapper):
                     all_tables[table_id] = example
 
         datasets = {}
-
-        if self.data.e2e_wtq_data.get('bm25_results', None) is None:
-            bm25_results_path = os.path.join(self.config.DATA_FOLDER, module_config.config.bm25_results)
-            if not os.path.exists(bm25_results_path):
-                raise Exception("Please generate BM25 results first.")
-            with open(bm25_results_path, 'r') as bm25_results_file:
-                bm25_results = json.load(bm25_results_file)
         
         for split, split_path in module_config.config.data_path.items():
             split_path = os.path.join(self.config.DATA_FOLDER, split_path)
@@ -1566,19 +1544,12 @@ class DataLoaderForTableQA(DataLoaderWrapper):
                     question_id = item['id']
                     question = item['question']
                     answers = item['answers']
-                    bm25_retrieved_items = bm25_results.get(question_id, None)
-                    if bm25_retrieved_items:
-                        bm25_retrieved_item_ids = [i['id'] for i in bm25_retrieved_items]
-                    else:
-                        logger.error(f"{question_id} not found retrieved bm25 documents!")
-                        bm25_retrieved_item_ids = []
                     
                     example = EasyDict(
                         question_id=question_id,
                         question=question,
                         answers=answers,
                         pos_item_id=table_id,
-                        bm25_retrieved_item_ids=bm25_retrieved_item_ids,
                     )
                     dataset[question_id] = example
                 
